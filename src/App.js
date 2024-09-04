@@ -1,24 +1,16 @@
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import Quiz from "./components/Quiz";
-
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: '#1976d2',  // Change the primary color
-        },
-    },
-    typography: {
-        h4: {
-            fontWeight: 'bold', // Make h4 bolder
-        },
-    },
-});
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Statistics from './components/Statistics';
+import Quiz from './components/Quiz';
 
 const App = () => {
     return (
-        <ThemeProvider theme={theme}>
-            <Quiz />
-        </ThemeProvider>
+        <Router>
+            <Routes>
+                <Route path="/" element={<Quiz />} />
+                <Route path="/statistics" element={<Statistics />} />
+            </Routes>
+        </Router>
     );
 };
 
