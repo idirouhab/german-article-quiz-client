@@ -1,25 +1,25 @@
-import logo from './logo.svg';
-import './App.css';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import Quiz from "./components/Quiz";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const theme = createTheme({
+    palette: {
+        primary: {
+            main: '#1976d2',  // Change the primary color
+        },
+    },
+    typography: {
+        h4: {
+            fontWeight: 'bold', // Make h4 bolder
+        },
+    },
+});
+
+const App = () => {
+    return (
+        <ThemeProvider theme={theme}>
+            <Quiz />
+        </ThemeProvider>
+    );
+};
 
 export default App;
