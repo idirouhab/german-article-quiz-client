@@ -17,7 +17,7 @@ import {
     IconButton,
     Tooltip
 } from '@mui/material';
-import { blue, grey, green, red } from '@mui/material/colors';
+import { blue, grey, red } from '@mui/material/colors';
 import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
 
 const Statistics = () => {
