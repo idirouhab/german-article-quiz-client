@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     Container,
     Card,
@@ -13,7 +13,6 @@ import {
     LinearProgress
 } from '@mui/material';
 
-
 const Quiz = () => {
     const [playerName, setPlayerName] = useState('');
     const [gameStarted, setGameStarted] = useState(false);
@@ -25,6 +24,9 @@ const Quiz = () => {
     const [points, setPoints] = useState(0);
     const [correctStreak, setCorrectStreak] = useState(0);
     const [answered, setAnswered] = useState(false);
+    const [quizCompleted, setQuizCompleted] = useState(false);
+
+    const TOTAL_WORD = 5; // Number of words in the quiz
 
     // Fetch words when the game starts
     useEffect(() => {
@@ -32,7 +34,7 @@ const Quiz = () => {
             fetch(`${process.env.REACT_APP_API_URL}/words-with-rates`)
                 .then((response) => response.json())
                 .then((data) => {
-                    setWords(data.slice(0, 25)); // Limit to 25 words
+                    setWords(data.slice(0, TOTAL_WORD));
                     setLoading(false);
                 })
                 .catch((error) => {
@@ -87,9 +89,37 @@ const Quiz = () => {
         setAnswerStatus(null);
     };
 
+    const handleSubmitResults = () => {
+        fetch(`${process.env.REACT_APP_API_URL}/submit-results`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: playerName,
+                score: points,
+            }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log('Result submitted successfully:', data);
+            })
+            .catch((error) => {
+                console.error('Error submitting result:', error);
+            });
+    };
+
+    useEffect(() => {
+        console.log(currentWordIndex, words.length, quizCompleted);
+        if (playerName && currentWordIndex >= words.length && !quizCompleted) {
+            handleSubmitResults(); // Send results to backend
+            setQuizCompleted(true);
+        }
+    }, [currentWordIndex, words.length, quizCompleted]);
+
     if (!gameStarted) {
         return (
-            <Container maxWidth="sm" sx={{ mt: 5 }}>
+            <Container maxWidth="sm" sx={{mt: 5}}>
                 <Card>
                     <CardContent>
                         <Typography variant="h5" align="center" gutterBottom>
@@ -101,7 +131,7 @@ const Quiz = () => {
                             variant="outlined"
                             value={playerName}
                             onChange={(e) => setPlayerName(e.target.value)}
-                            sx={{ mb: 3 }}
+                            sx={{mb: 3}}
                         />
                         <Box textAlign="center">
                             <Button variant="contained" color="primary" onClick={handleStartGame}>
@@ -117,25 +147,25 @@ const Quiz = () => {
     if (loading) {
         return (
             <Box
-                sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
+                sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}
             >
-                <CircularProgress />
+                <CircularProgress/>
             </Box>
         );
     }
 
     if (currentWordIndex >= words.length) {
         return (
-            <Container maxWidth="sm" sx={{ mt: 5 }}>
+            <Container maxWidth="sm" sx={{mt: 5}}>
                 <Card>
                     <CardContent>
                         <Typography variant="h4" component="h1" gutterBottom align="center">
                             Quiz Complete
                         </Typography>
-                        <Typography variant="h6" align="center" sx={{ mb: 2 }}>
+                        <Typography variant="h6" align="center" sx={{mb: 2}}>
                             Well done, {playerName}! Your final score is: {points}
                         </Typography>
-                        <Box textAlign="center" sx={{ mt: 2 }}>
+                        <Box textAlign="center" sx={{mt: 2}}>
                             <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
                                 Play Again
                             </Button>
@@ -147,10 +177,10 @@ const Quiz = () => {
     }
 
     const currentWord = words[currentWordIndex];
-    const progressPercentage = ((currentWordIndex + 1) / words.length) * 100; // Calculate the progress
+    const progressPercentage = ((currentWordIndex + 1) / TOTAL_WORD) * 100; // Calculate the progress
 
     return (
-        <Container maxWidth="sm" sx={{ mt: 5 }}>
+        <Container maxWidth="sm" sx={{mt: 5}}>
             <Card>
                 <CardContent>
                     <Typography variant="h5" align="center" gutterBottom>
@@ -159,7 +189,7 @@ const Quiz = () => {
                     <Typography
                         variant="h4"
                         align="center"
-                        sx={{ mb: 4 }}
+                        sx={{mb: 4}}
                     >
                         {currentWord.word} <Typography variant="body1" component="span">
                         (Success Rate: {currentWord.success_rate.toFixed(2)}%)
@@ -170,13 +200,13 @@ const Quiz = () => {
                     <LinearProgress
                         variant="determinate"
                         value={progressPercentage}
-                        sx={{ mb: 2 }}
+                        sx={{mb: 2}}
                     />
-                    <Typography variant="body2" align="center" sx={{ mb: 4 }}>
-                        Question {currentWordIndex + 1} of 25
+                    <Typography variant="body2" align="center" sx={{mb: 4}}>
+                        Question {currentWordIndex + 1} of {TOTAL_WORD}
                     </Typography>
 
-                    <Typography variant="h6" align="center" gutterBottom sx={{ mb: 2 }}>
+                    <Typography variant="h6" align="center" gutterBottom sx={{mb: 2}}>
                         Points: {points}
                     </Typography>
 
@@ -228,14 +258,14 @@ const Quiz = () => {
                     </Grid>
 
                     {showAnswer && (
-                        <Box sx={{ mt: 4, textAlign: 'center' }}>
+                        <Box sx={{mt: 4, textAlign: 'center'}}>
                             {answerStatus === 'correct' && (
-                                <Alert severity="success" sx={{ mb: 2 }}>
+                                <Alert severity="success" sx={{mb: 2}}>
                                     Correct answer!
                                 </Alert>
                             )}
                             {answerStatus === 'incorrect' && (
-                                <Alert severity="error" sx={{ mb: 2 }}>
+                                <Alert severity="error" sx={{mb: 2}}>
                                     Incorrect! The correct answer was <strong>{currentWord.article}</strong>.
                                 </Alert>
                             )}
@@ -246,7 +276,7 @@ const Quiz = () => {
                             <Button
                                 variant="contained"
                                 color="primary"
-                                sx={{ mt: 2 }}
+                                sx={{mt: 2}}
                                 onClick={handleNextQuestion}
                             >
                                 Next Question
