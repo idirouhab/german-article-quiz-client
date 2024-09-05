@@ -26,9 +26,10 @@ const Quiz = () => {
     const [loading, setLoading] = useState(true);
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [showAnswer, setShowAnswer] = useState(false);
-    const [correctAnswers, setCorrectAnswers] = useState(0);
-    const [answered, setAnswered] = useState(false);
     const [answerStatus, setAnswerStatus] = useState(null);
+    const [points, setPoints] = useState(0);
+    const [correctStreak, setCorrectStreak] = useState(0);
+    const [answered, setAnswered] = useState(false);
 
     useEffect(() => {
         fetch(`${process.env.REACT_APP_API_URL}/words-with-rates`)
@@ -47,15 +48,21 @@ const Quiz = () => {
     const handleAnswer = (selectedArticle) => {
         const correct = selectedArticle === words[currentWordIndex].article;
         if (correct) {
-            setCorrectAnswers(correctAnswers + 1);
+            setPoints(points + 5);
+            setCorrectStreak(correctStreak + 1);
+            if ((correctStreak + 1) % 5 === 0) {
+                setPoints(points + 10); // Bonus points
+            }
             setAnswerStatus('correct');
         } else {
+            setPoints(points - 5);
+            setCorrectStreak(0);
             setAnswerStatus('incorrect');
         }
         setShowAnswer(true);
         setAnswered(true);
 
-        // Update tracking information
+        // Optionally update tracking information
         fetch(`${process.env.REACT_APP_API_URL}/update-tracking`, {
             method: 'POST',
             headers: {
@@ -94,7 +101,7 @@ const Quiz = () => {
                             Quiz Complete
                         </Typography>
                         <Typography variant="h6" align="center" sx={{ mb: 2 }}>
-                            Your score: {correctAnswers} / {words.length}
+                            Your score: {points}
                         </Typography>
                         <Box textAlign="center" sx={{ mt: 2 }}>
                             <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
@@ -125,6 +132,10 @@ const Quiz = () => {
                         {currentWord.word} <Typography variant="body1" component="span" sx={{ color: grey[600] }}>
                         (Success Rate: {currentWord.success_rate.toFixed(2)}%)
                     </Typography>
+                    </Typography>
+
+                    <Typography variant="h6" align="center" gutterBottom sx={{ mb: 2 }}>
+                        Points: {points}
                     </Typography>
 
                     <Grid container spacing={2} justifyContent="center">
