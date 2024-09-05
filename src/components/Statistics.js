@@ -17,8 +17,8 @@ import {
     IconButton,
     Tooltip
 } from '@mui/material';
-import { blue, grey, red } from '@mui/material/colors';
 import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
+import { grey, red } from '@mui/material/colors';
 
 const Statistics = () => {
     const [statistics, setStatistics] = useState([]);
@@ -29,7 +29,11 @@ const Statistics = () => {
         fetch(`${process.env.REACT_APP_API_URL}/statistics`)
             .then((response) => response.json())
             .then((data) => {
-                setStatistics(data);
+                const updatedStatistics = data.map((stat) => ({
+                    ...stat,
+                    failed_attempts: stat.times_shown - stat.times_correct
+                }));
+                setStatistics(updatedStatistics);
                 setLoading(false);
             })
             .catch((error) => {
@@ -43,9 +47,8 @@ const Statistics = () => {
     };
 
     const sortedStatistics = [...statistics].sort((a, b) => {
-        return sortOrder === 'desc'
-            ? (b.times_shown - b.times_correct) - (a.times_shown - a.times_correct)
-            : (a.times_shown - a.times_correct) - (b.times_shown - b.times_correct);
+        const diff = b.failed_attempts - a.failed_attempts;
+        return sortOrder === 'desc' ? diff : -diff;
     });
 
     if (loading) {
@@ -62,22 +65,21 @@ const Statistics = () => {
         <Container maxWidth="md" sx={{ mt: 5 }}>
             <Card>
                 <CardContent>
-                    <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ color: blue[700] }}>
-                        Quiz Statistics
+                    <Typography variant="h4" align="center" gutterBottom>
+                        Word Statistics
                     </Typography>
-                    <Divider sx={{ mb: 2 }} />
-                    <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
-                        <Table>
+                    <Divider sx={{ mb: 4 }} />
+                    <TableContainer component={Paper}>
+                        <Table aria-label="failed words table">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Word</TableCell>
-                                    <TableCell align="right">Times Shown</TableCell>
-                                    <TableCell align="right">Times Correct</TableCell>
-                                    <TableCell align="right">Success Rate (%)</TableCell>
-                                    <TableCell align="right">Failures</TableCell>
-                                    <TableCell align="right">
-                                        <Tooltip title={`Sort by failures (${sortOrder === 'desc' ? 'Descending' : 'Ascending'})`}>
-                                            <IconButton onClick={handleSort}>
+                                    <TableCell align="left">Word</TableCell>
+                                    <TableCell align="left">Times Shown</TableCell>
+                                    <TableCell align="left">Times Correct</TableCell>
+                                    <TableCell align="right" aria-label="failed attempts column">
+                                        Failed Attempts
+                                        <Tooltip title={`Sort by failed attempts (${sortOrder === 'asc' ? 'ascending' : 'descending'})`}>
+                                            <IconButton onClick={handleSort} size="small">
                                                 {sortOrder === 'desc' ? <ArrowDownward /> : <ArrowUpward />}
                                             </IconButton>
                                         </Tooltip>
@@ -85,28 +87,13 @@ const Statistics = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {sortedStatistics.map((stat) => (
-                                    <TableRow
-                                        key={stat.word}
-                                        sx={{
-                                            '&:nth-of-type(odd)': {
-                                                backgroundColor: grey[200],
-                                            },
-                                            '&:hover': {
-                                                backgroundColor: grey[300],
-                                            },
-                                        }}
-                                    >
-                                        <TableCell component="th" scope="row">
-                                            {stat.word}
-                                        </TableCell>
-                                        <TableCell align="right">{stat.times_shown}</TableCell>
-                                        <TableCell align="right">{stat.times_correct}</TableCell>
-                                        <TableCell align="right">
-                                            {stat.success_rate.toFixed(2)}%
-                                        </TableCell>
-                                        <TableCell align="right" sx={{ color: red[700] }}>
-                                            {stat.times_shown - stat.times_correct}
+                                {sortedStatistics.map((row) => (
+                                    <TableRow key={row.word}>
+                                        <TableCell align="left">{row.word}</TableCell>
+                                        <TableCell align="left">{row.times_shown}</TableCell>
+                                        <TableCell align="left">{row.times_correct}</TableCell>
+                                        <TableCell align="right" style={{ color: row.failed_attempts > 5 ? red[500] : grey[800] }}>
+                                            {row.failed_attempts}
                                         </TableCell>
                                     </TableRow>
                                 ))}

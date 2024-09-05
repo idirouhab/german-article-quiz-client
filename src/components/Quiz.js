@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Container,
     Card,
@@ -8,20 +8,15 @@ import {
     Grid,
     CircularProgress,
     Box,
-    Alert
+    Alert,
+    TextField,
+    LinearProgress
 } from '@mui/material';
-import { blue, grey } from '@mui/material/colors';
 
-const shuffleArray = (array) => {
-    let shuffledArray = array.slice(); // Create a copy of the array
-    for (let i = shuffledArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
-    }
-    return shuffledArray;
-};
 
 const Quiz = () => {
+    const [playerName, setPlayerName] = useState('');
+    const [gameStarted, setGameStarted] = useState(false);
     const [words, setWords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -31,19 +26,29 @@ const Quiz = () => {
     const [correctStreak, setCorrectStreak] = useState(0);
     const [answered, setAnswered] = useState(false);
 
+    // Fetch words when the game starts
     useEffect(() => {
-        fetch(`${process.env.REACT_APP_API_URL}/words-with-rates`)
-            .then((response) => response.json())
-            .then((data) => {
-                const shuffledWords = shuffleArray(data);
-                setWords(shuffledWords);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error(error);
-                setLoading(false);
-            });
-    }, []);
+        if (gameStarted) {
+            fetch(`${process.env.REACT_APP_API_URL}/words-with-rates`)
+                .then((response) => response.json())
+                .then((data) => {
+                    setWords(data.slice(0, 25)); // Limit to 25 words
+                    setLoading(false);
+                })
+                .catch((error) => {
+                    console.error(error);
+                    setLoading(false);
+                });
+        }
+    }, [gameStarted]);
+
+    const handleStartGame = () => {
+        if (playerName.trim()) {
+            setGameStarted(true);
+        } else {
+            alert("Please enter your name to start the game!");
+        }
+    };
 
     const handleAnswer = (selectedArticle) => {
         const correct = selectedArticle === words[currentWordIndex].article;
@@ -82,6 +87,33 @@ const Quiz = () => {
         setAnswerStatus(null);
     };
 
+    if (!gameStarted) {
+        return (
+            <Container maxWidth="sm" sx={{ mt: 5 }}>
+                <Card>
+                    <CardContent>
+                        <Typography variant="h5" align="center" gutterBottom>
+                            Welcome to the Quiz Game!
+                        </Typography>
+                        <TextField
+                            fullWidth
+                            label="Enter your name"
+                            variant="outlined"
+                            value={playerName}
+                            onChange={(e) => setPlayerName(e.target.value)}
+                            sx={{ mb: 3 }}
+                        />
+                        <Box textAlign="center">
+                            <Button variant="contained" color="primary" onClick={handleStartGame}>
+                                Start Game
+                            </Button>
+                        </Box>
+                    </CardContent>
+                </Card>
+            </Container>
+        );
+    }
+
     if (loading) {
         return (
             <Box
@@ -101,11 +133,11 @@ const Quiz = () => {
                             Quiz Complete
                         </Typography>
                         <Typography variant="h6" align="center" sx={{ mb: 2 }}>
-                            Your score: {points}
+                            Well done, {playerName}! Your final score is: {points}
                         </Typography>
                         <Box textAlign="center" sx={{ mt: 2 }}>
                             <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
-                                Try Again
+                                Play Again
                             </Button>
                         </Box>
                     </CardContent>
@@ -115,23 +147,33 @@ const Quiz = () => {
     }
 
     const currentWord = words[currentWordIndex];
+    const progressPercentage = ((currentWordIndex + 1) / words.length) * 100; // Calculate the progress
 
     return (
         <Container maxWidth="sm" sx={{ mt: 5 }}>
             <Card>
                 <CardContent>
-                    <Typography variant="h5" component="h2" align="center" gutterBottom>
+                    <Typography variant="h5" align="center" gutterBottom>
                         What is the article for:
                     </Typography>
                     <Typography
                         variant="h4"
-                        component="h1"
                         align="center"
-                        sx={{ mb: 4, color: blue[700] }}
+                        sx={{ mb: 4 }}
                     >
-                        {currentWord.word} <Typography variant="body1" component="span" sx={{ color: grey[600] }}>
+                        {currentWord.word} <Typography variant="body1" component="span">
                         (Success Rate: {currentWord.success_rate.toFixed(2)}%)
                     </Typography>
+                    </Typography>
+
+                    {/* Progress Bar */}
+                    <LinearProgress
+                        variant="determinate"
+                        value={progressPercentage}
+                        sx={{ mb: 2 }}
+                    />
+                    <Typography variant="body2" align="center" sx={{ mb: 4 }}>
+                        Question {currentWordIndex + 1} of 25
                     </Typography>
 
                     <Typography variant="h6" align="center" gutterBottom sx={{ mb: 2 }}>
@@ -146,7 +188,6 @@ const Quiz = () => {
                                 color={answered && currentWord.article === 'der' ? 'success' : 'primary'}
                                 onClick={() => handleAnswer('der')}
                                 disabled={answered}
-                                sx={{ bgcolor: grey[800], '&:hover': { bgcolor: grey[600] } }}
                             >
                                 der
                             </Button>
@@ -158,7 +199,6 @@ const Quiz = () => {
                                 color={answered && currentWord.article === 'die' ? 'success' : 'primary'}
                                 onClick={() => handleAnswer('die')}
                                 disabled={answered}
-                                sx={{ bgcolor: grey[800], '&:hover': { bgcolor: grey[600] } }}
                             >
                                 die
                             </Button>
@@ -170,7 +210,6 @@ const Quiz = () => {
                                 color={answered && currentWord.article === 'das' ? 'success' : 'primary'}
                                 onClick={() => handleAnswer('das')}
                                 disabled={answered}
-                                sx={{ bgcolor: grey[800], '&:hover': { bgcolor: grey[600] } }}
                             >
                                 das
                             </Button>
@@ -182,7 +221,6 @@ const Quiz = () => {
                                 color={answered && currentWord.article === 'die' && currentWord.translation === 'plural' ? 'success' : 'primary'}
                                 onClick={() => handleAnswer('die_plural')}
                                 disabled={answered}
-                                sx={{ bgcolor: grey[800], '&:hover': { bgcolor: grey[600] } }}
                             >
                                 die (Plural)
                             </Button>
