@@ -115,7 +115,7 @@ const Quiz = () => {
             handleSubmitResults(); // Send results to backend
             setQuizCompleted(true);
         }
-    }, [currentWordIndex, words.length, quizCompleted]);
+    }, [handleSubmitResults, playerName, currentWordIndex, words.length, quizCompleted]);
 
     if (!gameStarted) {
         return (
