@@ -30,7 +30,7 @@ const Quiz = () => {
     // Fetch words when the game starts
     useEffect(() => {
         if (gameStarted) {
-            fetch(`${process.env.REACT_APP_API_URL}/words-with-rates`)
+            fetch(`${process.env.REACT_APP_API_URL}/words/words-with-rates`)
                 .then((response) => response.json())
                 .then((data) => {
                     setWords(data.slice(0, numberOfWords));
@@ -69,7 +69,7 @@ const Quiz = () => {
         setAnswered(true);
 
         // Optionally update tracking information
-        fetch(`${process.env.REACT_APP_API_URL}/update-tracking`, {
+        fetch(`${process.env.REACT_APP_API_URL}/words/update-tracking`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ const Quiz = () => {
     };
 
     const handleSubmitResults = useCallback(() => {
-        fetch(`${process.env.REACT_APP_API_URL}/submit-results`, {
+        fetch(`${process.env.REACT_APP_API_URL}/results/submit-results`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
