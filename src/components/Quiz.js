@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Container,
     Card,
@@ -41,7 +41,7 @@ const Quiz = () => {
                     setLoading(false);
                 });
         }
-    }, [gameStarted]);
+    }, [gameStarted, numberOfWords]); // Added numberOfWords as a dependency
 
     const handleStartGame = () => {
         if (playerName.trim()) {
@@ -88,7 +88,7 @@ const Quiz = () => {
         setAnswerStatus(null);
     };
 
-    const handleSubmitResults = () => {
+    const handleSubmitResults = useCallback(() => {
         fetch(`${process.env.REACT_APP_API_URL}/submit-results`, {
             method: 'POST',
             headers: {
@@ -106,10 +106,9 @@ const Quiz = () => {
             .catch((error) => {
                 console.error('Error submitting result:', error);
             });
-    };
+    }, [playerName, points]); // Memoized handleSubmitResults with dependencies
 
     useEffect(() => {
-        console.log(currentWordIndex, words.length, quizCompleted);
         if (playerName && currentWordIndex >= words.length && !quizCompleted) {
             handleSubmitResults(); // Send results to backend
             setQuizCompleted(true);
@@ -118,7 +117,7 @@ const Quiz = () => {
 
     if (!gameStarted) {
         return (
-            <Container maxWidth="sm" sx={{mt: 5}}>
+            <Container maxWidth="sm" sx={{ mt: 5 }}>
                 <Card>
                     <CardContent>
                         <Typography variant="h5" align="center" gutterBottom>
@@ -130,7 +129,7 @@ const Quiz = () => {
                             variant="outlined"
                             value={playerName}
                             onChange={(e) => setPlayerName(e.target.value)}
-                            sx={{mb: 3}}
+                            sx={{ mb: 3 }}
                         />
                         <TextField
                             fullWidth
@@ -138,7 +137,7 @@ const Quiz = () => {
                             variant="outlined"
                             value={numberOfWords}
                             onChange={(e) => setNumberOfWords(e.target.value)}
-                            sx={{mb: 3}}
+                            sx={{ mb: 3 }}
                         />
                         <Box textAlign="center">
                             <Button variant="contained" color="primary" onClick={handleStartGame}>
@@ -154,25 +153,25 @@ const Quiz = () => {
     if (loading) {
         return (
             <Box
-                sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}
+                sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
             >
-                <CircularProgress/>
+                <CircularProgress />
             </Box>
         );
     }
 
     if (currentWordIndex >= words.length) {
         return (
-            <Container maxWidth="sm" sx={{mt: 5}}>
+            <Container maxWidth="sm" sx={{ mt: 5 }}>
                 <Card>
                     <CardContent>
                         <Typography variant="h4" component="h1" gutterBottom align="center">
                             Quiz Complete
                         </Typography>
-                        <Typography variant="h6" align="center" sx={{mb: 2}}>
+                        <Typography variant="h6" align="center" sx={{ mb: 2 }}>
                             Well done, {playerName}! Your final score is: {points}
                         </Typography>
-                        <Box textAlign="center" sx={{mt: 2}}>
+                        <Box textAlign="center" sx={{ mt: 2 }}>
                             <Button variant="contained" color="primary" onClick={() => window.location.reload()}>
                                 Play Again
                             </Button>
@@ -187,7 +186,7 @@ const Quiz = () => {
     const progressPercentage = ((currentWordIndex + 1) / numberOfWords) * 100; // Calculate the progress
 
     return (
-        <Container maxWidth="sm" sx={{mt: 5}}>
+        <Container maxWidth="sm" sx={{ mt: 5 }}>
             <Card>
                 <CardContent>
                     <Typography variant="h5" align="center" gutterBottom>
@@ -196,7 +195,7 @@ const Quiz = () => {
                     <Typography
                         variant="h4"
                         align="center"
-                        sx={{mb: 4}}
+                        sx={{ mb: 4 }}
                     >
                         {currentWord.word} <Typography variant="body1" component="span">
                         (Success Rate: {currentWord.success_rate.toFixed(2)}%)
@@ -207,13 +206,13 @@ const Quiz = () => {
                     <LinearProgress
                         variant="determinate"
                         value={progressPercentage}
-                        sx={{mb: 2}}
+                        sx={{ mb: 2 }}
                     />
-                    <Typography variant="body2" align="center" sx={{mb: 4}}>
+                    <Typography variant="body2" align="center" sx={{ mb: 4 }}>
                         Question {currentWordIndex + 1} of {numberOfWords}
                     </Typography>
 
-                    <Typography variant="h6" align="center" gutterBottom sx={{mb: 2}}>
+                    <Typography variant="h6" align="center" gutterBottom sx={{ mb: 2 }}>
                         Points: {points}
                     </Typography>
 
@@ -265,14 +264,14 @@ const Quiz = () => {
                     </Grid>
 
                     {showAnswer && (
-                        <Box sx={{mt: 4, textAlign: 'center'}}>
+                        <Box sx={{ mt: 4, textAlign: 'center' }}>
                             {answerStatus === 'correct' && (
-                                <Alert severity="success" sx={{mb: 2}}>
+                                <Alert severity="success" sx={{ mb: 2 }}>
                                     Correct answer!
                                 </Alert>
                             )}
                             {answerStatus === 'incorrect' && (
-                                <Alert severity="error" sx={{mb: 2}}>
+                                <Alert severity="error" sx={{ mb: 2 }}>
                                     Incorrect! The correct answer was <strong>{currentWord.article}</strong>.
                                 </Alert>
                             )}
@@ -283,7 +282,7 @@ const Quiz = () => {
                             <Button
                                 variant="contained"
                                 color="primary"
-                                sx={{mt: 2}}
+                                sx={{ mt: 2 }}
                                 onClick={handleNextQuestion}
                             >
                                 Next Question
