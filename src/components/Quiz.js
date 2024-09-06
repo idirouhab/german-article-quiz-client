@@ -15,6 +15,7 @@ import {
 
 const Quiz = () => {
     const [playerName, setPlayerName] = useState('');
+    const [numberOfWords, setNumberOfWords] = useState(5);
     const [gameStarted, setGameStarted] = useState(false);
     const [words, setWords] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,15 +27,13 @@ const Quiz = () => {
     const [answered, setAnswered] = useState(false);
     const [quizCompleted, setQuizCompleted] = useState(false);
 
-    const TOTAL_WORD = 5; // Number of words in the quiz
-
     // Fetch words when the game starts
     useEffect(() => {
         if (gameStarted) {
             fetch(`${process.env.REACT_APP_API_URL}/words-with-rates`)
                 .then((response) => response.json())
                 .then((data) => {
-                    setWords(data.slice(0, TOTAL_WORD));
+                    setWords(data.slice(0, numberOfWords));
                     setLoading(false);
                 })
                 .catch((error) => {
@@ -133,6 +132,14 @@ const Quiz = () => {
                             onChange={(e) => setPlayerName(e.target.value)}
                             sx={{mb: 3}}
                         />
+                        <TextField
+                            fullWidth
+                            label="Number of words"
+                            variant="outlined"
+                            value={numberOfWords}
+                            onChange={(e) => setNumberOfWords(e.target.value)}
+                            sx={{mb: 3}}
+                        />
                         <Box textAlign="center">
                             <Button variant="contained" color="primary" onClick={handleStartGame}>
                                 Start Game
@@ -177,7 +184,7 @@ const Quiz = () => {
     }
 
     const currentWord = words[currentWordIndex];
-    const progressPercentage = ((currentWordIndex + 1) / TOTAL_WORD) * 100; // Calculate the progress
+    const progressPercentage = ((currentWordIndex + 1) / numberOfWords) * 100; // Calculate the progress
 
     return (
         <Container maxWidth="sm" sx={{mt: 5}}>
@@ -203,7 +210,7 @@ const Quiz = () => {
                         sx={{mb: 2}}
                     />
                     <Typography variant="body2" align="center" sx={{mb: 4}}>
-                        Question {currentWordIndex + 1} of {TOTAL_WORD}
+                        Question {currentWordIndex + 1} of {numberOfWords}
                     </Typography>
 
                     <Typography variant="h6" align="center" gutterBottom sx={{mb: 2}}>
