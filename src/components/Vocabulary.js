@@ -1,11 +1,10 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     Container,
     Card,
     CardContent,
     Typography,
     Button,
-    Grid,
     CircularProgress,
     Box,
     Alert,
@@ -26,6 +25,7 @@ const Quiz = () => {
     const [correctStreak, setCorrectStreak] = useState(0);
     const [answered, setAnswered] = useState(false);
     const [quizCompleted, setQuizCompleted] = useState(false);
+    const [userAnswer, setUserAnswer] = useState('');
 
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
@@ -38,7 +38,7 @@ const Quiz = () => {
     // Fetch words when the game starts
     useEffect(() => {
         if (gameStarted) {
-            fetch(`${process.env.REACT_APP_API_URL}/words/words-with-rates`)
+            fetch(`${process.env.REACT_APP_API_URL}/vocabulary`)
                 .then((response) => response.json())
                 .then((data) => {
                     let randomData = shuffleArray(data)
@@ -50,7 +50,7 @@ const Quiz = () => {
                     setLoading(false);
                 });
         }
-    }, [gameStarted, numberOfWords]); // Added numberOfWords as a dependency
+    }, [gameStarted, numberOfWords]);
 
     const handleStartGame = () => {
         if (playerName.trim()) {
@@ -60,8 +60,8 @@ const Quiz = () => {
         }
     };
 
-    const handleAnswer = (selectedArticle) => {
-        const correct = selectedArticle === words[currentWordIndex].article;
+    const handleAnswer = () => {
+        const correct = userAnswer.trim().toLowerCase() === words[currentWordIndex].translation.toLowerCase();
         if (correct) {
             setPoints(points + 5);
             setCorrectStreak(correctStreak + 1);
@@ -76,18 +76,6 @@ const Quiz = () => {
         }
         setShowAnswer(true);
         setAnswered(true);
-
-        // Optionally update tracking information
-        fetch(`${process.env.REACT_APP_API_URL}/words/update-tracking`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                word: words[currentWordIndex].word,
-                wasCorrect: correct,
-            }),
-        }).catch((error) => console.error('Error updating tracking:', error));
     };
 
     const handleNextQuestion = () => {
@@ -95,37 +83,22 @@ const Quiz = () => {
         setAnswered(false);
         setCurrentWordIndex(currentWordIndex + 1);
         setAnswerStatus(null);
+        setUserAnswer(''); // Reset the input field
     };
 
-    const handleSubmitResults = useCallback(() => {
-        if (quizCompleted) {
-            fetch(`${process.env.REACT_APP_API_URL}/results/submit-results`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: playerName,
-                    score: points,
-                }),
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    console.log('Result submitted successfully:', data);
-                })
-                .catch((error) => {
-                    console.error('Error submitting result:', error);
-                });
-        }
-
-    }, [playerName, points, quizCompleted]); // Memoized handleSubmitResults with dependencies
 
     useEffect(() => {
         if (playerName && currentWordIndex >= words.length && !quizCompleted) {
             setQuizCompleted(true);
-            handleSubmitResults(); // Send results to backend
         }
-    }, [handleSubmitResults, playerName, currentWordIndex, words.length, quizCompleted]);
+    }, [playerName, currentWordIndex, words.length, quizCompleted]);
+
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !answered) {
+            handleAnswer();
+        }
+    };
 
     if (!gameStarted) {
         return (
@@ -210,7 +183,6 @@ const Quiz = () => {
                         sx={{mb: 4}}
                     >
                         {currentWord.word} <Typography variant="body1" component="span">
-                        (Success Rate: {currentWord.success_rate.toFixed(2)}%)
                     </Typography>
                     </Typography>
 
@@ -228,52 +200,27 @@ const Quiz = () => {
                         Points: {points}
                     </Typography>
 
-                    <Grid container spacing={2} justifyContent="center">
-                        <Grid item xs={6}>
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                color={answered && currentWord.article === 'der' ? 'success' : 'primary'}
-                                onClick={() => handleAnswer('der')}
-                                disabled={answered}
-                            >
-                                der
-                            </Button>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                color={answered && currentWord.article === 'die' ? 'success' : 'primary'}
-                                onClick={() => handleAnswer('die')}
-                                disabled={answered}
-                            >
-                                die
-                            </Button>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                color={answered && currentWord.article === 'das' ? 'success' : 'primary'}
-                                onClick={() => handleAnswer('das')}
-                                disabled={answered}
-                            >
-                                das
-                            </Button>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Button
-                                fullWidth
-                                variant="contained"
-                                color={answered && currentWord.article === 'die' && currentWord.translation === 'plural' ? 'success' : 'primary'}
-                                onClick={() => handleAnswer('die_plural')}
-                                disabled={answered}
-                            >
-                                die (Plural)
-                            </Button>
-                        </Grid>
-                    </Grid>
+                    <TextField
+                        fullWidth
+                        label="Enter the article"
+                        variant="outlined"
+                        value={userAnswer}
+                        onChange={(e) => setUserAnswer(e.target.value)}
+                        disabled={answered}
+                        onKeyDown={handleKeyDown}
+
+                    />
+
+                    <Box textAlign="center" sx={{mt: 2}}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleAnswer}
+                            disabled={answered}
+                        >
+                            Submit Answer
+                        </Button>
+                    </Box>
 
                     {showAnswer && (
                         <Box sx={{mt: 4, textAlign: 'center'}}>
@@ -296,6 +243,7 @@ const Quiz = () => {
                                 color="primary"
                                 sx={{mt: 2}}
                                 onClick={handleNextQuestion}
+                                handleKeyDown={handleNextQuestion}
                             >
                                 Next Question
                             </Button>
