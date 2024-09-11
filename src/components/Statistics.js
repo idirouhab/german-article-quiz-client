@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+// Statistics.js
+import React, {useEffect, useState} from 'react';
 import {
     Container,
     Card,
@@ -13,88 +14,122 @@ import {
     Paper,
     CircularProgress,
     Box,
-    Divider,
-    IconButton,
-    Tooltip
+    Divider
 } from '@mui/material';
-import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
-import { grey, red } from '@mui/material/colors';
+import {Bar} from 'react-chartjs-2';
+import {Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Statistics = () => {
-    const [statistics, setStatistics] = useState([]);
+    const [scores, setScores] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [sortOrder, setSortOrder] = useState('desc');
+    const [averageScores, setAverageScores] = useState({});
 
     useEffect(() => {
-        fetch(`${process.env.REACT_APP_API_URL}/statistics`)
+        fetch(`${process.env.REACT_APP_API_URL}/scores`)
             .then((response) => response.json())
             .then((data) => {
-                const updatedStatistics = data.map((stat) => ({
-                    ...stat,
-                    failed_attempts: stat.times_shown - stat.times_correct
-                }));
-                setStatistics(updatedStatistics);
+                setScores(data);
+                calculateAverages(data);
                 setLoading(false);
             })
             .catch((error) => {
-                console.error(error);
+                console.error('Error fetching scores:', error);
                 setLoading(false);
             });
     }, []);
 
-    const handleSort = () => {
-        setSortOrder((prevOrder) => (prevOrder === 'desc' ? 'asc' : 'desc'));
+    const calculateAverages = (data) => {
+        const playerScores = data.reduce((acc, score) => {
+            if (!acc[score.player_name]) {
+                acc[score.player_name] = [];
+            }
+            acc[score.player_name].push(parseInt(score.score));
+            return acc;
+        }, {});
+
+        const averages = Object.keys(playerScores).reduce((acc, player) => {
+            const scores = playerScores[player];
+            const average = scores.reduce((sum, score) => {
+                return sum + score
+            }) / scores.length;
+            acc[player] = average.toFixed(2);
+            return acc;
+        }, {});
+        console.log(averages);
+        setAverageScores(averages);
     };
 
-    const sortedStatistics = [...statistics].sort((a, b) => {
-        const diff = b.failed_attempts - a.failed_attempts;
-        return sortOrder === 'desc' ? diff : -diff;
-    });
+    const chartData = {
+        labels: scores.map(score => score.player_name),
+        datasets: [{
+            label: 'Scores',
+            data: scores.map(score => score.score),
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1,
+        }],
+    };
 
     if (loading) {
         return (
-            <Box
-                sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
-            >
-                <CircularProgress />
-            </Box>
+            <Container maxWidth="sm" sx={{mt: 5, textAlign: 'center'}}>
+                <CircularProgress/>
+            </Container>
         );
     }
 
     return (
-        <Container maxWidth="md" sx={{ mt: 5 }}>
+        <Container maxWidth="md" sx={{mt: 5}}>
             <Card>
                 <CardContent>
-                    <Typography variant="h4" align="center" gutterBottom>
-                        Word Statistics
+                    <Typography variant="h5" gutterBottom align="center">
+                        Player Statistics
                     </Typography>
-                    <Divider sx={{ mb: 4 }} />
+                    <Divider sx={{mb: 2}}/>
+                    <Box sx={{mb: 4}}>
+                        <Bar
+                            data={chartData}
+                            options={{
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: (context) => `${context.label}: ${context.raw}`
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        beginAtZero: true
+                                    },
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }}
+                        />
+                    </Box>
+                    <Typography variant="h6" gutterBottom align="center">
+                        Average Scores Per Player
+                    </Typography>
                     <TableContainer component={Paper}>
-                        <Table aria-label="failed words table">
+                        <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell align="left">Word</TableCell>
-                                    <TableCell align="left">Times Shown</TableCell>
-                                    <TableCell align="left">Times Correct</TableCell>
-                                    <TableCell align="right" aria-label="failed attempts column">
-                                        Failed Attempts
-                                        <Tooltip title={`Sort by failed attempts (${sortOrder === 'asc' ? 'ascending' : 'descending'})`}>
-                                            <IconButton onClick={handleSort} size="small">
-                                                {sortOrder === 'desc' ? <ArrowDownward /> : <ArrowUpward />}
-                                            </IconButton>
-                                        </Tooltip>
-                                    </TableCell>
+                                    <TableCell>Player Name</TableCell>
+                                    <TableCell>Average Score</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {sortedStatistics.map((row) => (
-                                    <TableRow key={row.word}>
-                                        <TableCell align="left">{row.word}</TableCell>
-                                        <TableCell align="left">{row.times_shown}</TableCell>
-                                        <TableCell align="left">{row.times_correct}</TableCell>
-                                        <TableCell align="right" style={{ color: row.failed_attempts > 5 ? red[500] : grey[800] }}>
-                                            {row.failed_attempts}
-                                        </TableCell>
+                                {Object.keys(averageScores).map((name) => (
+                                    <TableRow key={name}>
+                                        <TableCell>{name}</TableCell>
+                                        <TableCell>{averageScores[name] || 'N/A'}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

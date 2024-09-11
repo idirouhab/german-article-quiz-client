@@ -13,7 +13,7 @@ import {
     LinearProgress
 } from '@mui/material';
 
-const Quiz = () => {
+const Articles = () => {
     const [playerName, setPlayerName] = useState('');
     const [numberOfWords, setNumberOfWords] = useState(5);
     const [gameStarted, setGameStarted] = useState(false);
@@ -307,4 +307,4 @@ const Quiz = () => {
     );
 };
 
-export default Quiz;
+export default Articles;
