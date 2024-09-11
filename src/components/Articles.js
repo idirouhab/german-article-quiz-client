@@ -23,7 +23,6 @@ const Articles = () => {
     const [showAnswer, setShowAnswer] = useState(false);
     const [answerStatus, setAnswerStatus] = useState(null);
     const [points, setPoints] = useState(0);
-    const [correctStreak, setCorrectStreak] = useState(0);
     const [answered, setAnswered] = useState(false);
     const [quizCompleted, setQuizCompleted] = useState(false);
 
@@ -63,50 +62,54 @@ const Articles = () => {
     const handleAnswer = (selectedArticle) => {
         const correct = selectedArticle === words[currentWordIndex].article;
         if (correct) {
-            setPoints(points + 5);
-            setCorrectStreak(correctStreak + 1);
-            if ((correctStreak + 1) % 5 === 0) {
-                setPoints(points + 10); // Bonus points
-            }
+            setPoints(points + 1);
             setAnswerStatus('correct');
         } else {
-            setPoints(points - 5);
-            setCorrectStreak(0);
             setAnswerStatus('incorrect');
         }
         setShowAnswer(true);
         setAnswered(true);
-
-        // Optionally update tracking information
-        fetch(`${process.env.REACT_APP_API_URL}/words/update-tracking`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                word: words[currentWordIndex].word,
-                wasCorrect: correct,
-            }),
-        }).catch((error) => console.error('Error updating tracking:', error));
     };
 
-    const handleNextQuestion = () => {
-        setShowAnswer(false);
-        setAnswered(false);
-        setCurrentWordIndex(currentWordIndex + 1);
-        setAnswerStatus(null);
-    };
+    const handleNextQuestion = useCallback(() => {
+        console.log(currentWordIndex, numberOfWords)
+        console.log(currentWordIndex + 1, numberOfWords)
 
-    const handleSubmitResults = useCallback(() => {
+        if (currentWordIndex + 1 < numberOfWords) {
+            setCurrentWordIndex(prevIndex => prevIndex + 1);
+            setAnswered(false);
+            setShowAnswer(false);
+            setAnswerStatus(null);
+        } else {
+            setQuizCompleted(true);
+        }
+
+    }, [currentWordIndex, numberOfWords]);
+
+    useEffect(() => {
+        const savedName = localStorage.getItem('playerName');
+        if (savedName) {
+            setPlayerName(savedName);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (playerName) {
+            localStorage.setItem('playerName', playerName);
+        }
+    }, [playerName]);
+
+    useEffect(() => {
         if (quizCompleted) {
-            fetch(`${process.env.REACT_APP_API_URL}/results/submit-results`, {
+            fetch(`${process.env.REACT_APP_API_URL}/scores/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    name: playerName,
-                    score: points,
+                    player: playerName,
+                    game: 'articles',
+                    score: ((points * 10) / numberOfWords).toFixed(2)
                 }),
             })
                 .then((response) => response.json())
@@ -117,15 +120,8 @@ const Articles = () => {
                     console.error('Error submitting result:', error);
                 });
         }
+    }, [quizCompleted, playerName, points, numberOfWords]); // Added difficulty as a dependency
 
-    }, [playerName, points, quizCompleted]); // Memoized handleSubmitResults with dependencies
-
-    useEffect(() => {
-        if (playerName && currentWordIndex >= words.length && !quizCompleted) {
-            setQuizCompleted(true);
-            handleSubmitResults(); // Send results to backend
-        }
-    }, [handleSubmitResults, playerName, currentWordIndex, words.length, quizCompleted]);
 
     if (!gameStarted) {
         return (
@@ -172,7 +168,7 @@ const Articles = () => {
         );
     }
 
-    if (currentWordIndex >= words.length) {
+    if (quizCompleted) {
         return (
             <Container maxWidth="sm" sx={{mt: 5}}>
                 <Card>

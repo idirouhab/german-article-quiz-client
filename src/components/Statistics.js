@@ -1,140 +1,100 @@
-// Statistics.js
-import React, {useEffect, useState} from 'react';
-import {
-    Container,
-    Card,
-    CardContent,
-    Typography,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    CircularProgress,
-    Box,
-    Divider
-} from '@mui/material';
-import {Bar} from 'react-chartjs-2';
-import {Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+import React, { useState, useEffect } from 'react';
+import { Container, Typography, Box, Card, CardContent, CircularProgress, Grid } from '@mui/material';
 
 const Statistics = () => {
-    const [scores, setScores] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [averageScores, setAverageScores] = useState({});
+    const [averagesByGame, setAveragesByGame] = useState({ vocabulary: {}, articles: {} });
 
     useEffect(() => {
         fetch(`${process.env.REACT_APP_API_URL}/scores`)
-            .then((response) => response.json())
-            .then((data) => {
-                setScores(data);
+            .then(response => response.json())
+            .then(data => {
                 calculateAverages(data);
                 setLoading(false);
             })
-            .catch((error) => {
-                console.error('Error fetching scores:', error);
+            .catch(error => {
+                console.error('Error fetching data:', error);
                 setLoading(false);
             });
     }, []);
 
     const calculateAverages = (data) => {
-        const playerScores = data.reduce((acc, score) => {
-            if (!acc[score.player_name]) {
-                acc[score.player_name] = [];
+        const scoresByGame = { vocabulary: {}, articles: {} };
+
+        data.forEach(player => {
+
+            const { player_name, score, game } = player;
+
+            if (!scoresByGame[game][player_name]) {
+                scoresByGame[game][player_name] = [];
             }
-            acc[score.player_name].push(parseInt(score.score));
-            return acc;
-        }, {});
 
-        const averages = Object.keys(playerScores).reduce((acc, player) => {
-            const scores = playerScores[player];
-            const average = scores.reduce((sum, score) => {
-                return sum + score
-            }) / scores.length;
-            acc[player] = average.toFixed(2);
-            return acc;
-        }, {});
-        console.log(averages);
-        setAverageScores(averages);
-    };
+            scoresByGame[game][player_name].push(parseInt(score));
+        });
 
-    const chartData = {
-        labels: scores.map(score => score.player_name),
-        datasets: [{
-            label: 'Scores',
-            data: scores.map(score => score.score),
-            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1,
-        }],
+        const calculateGameAverages = (playerScores) => {
+            return Object.keys(playerScores).reduce((acc, player) => {
+                const scores = playerScores[player];
+                const average = scores.reduce((sum, score) => sum + score) / scores.length;
+                acc[player] = average.toFixed(2);
+
+                return acc;
+            }, {});
+        };
+
+        setAveragesByGame({
+            vocabulary: calculateGameAverages(scoresByGame.vocabulary),
+            articles: calculateGameAverages(scoresByGame.articles),
+        });
     };
 
     if (loading) {
         return (
-            <Container maxWidth="sm" sx={{mt: 5, textAlign: 'center'}}>
-                <CircularProgress/>
-            </Container>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
         );
     }
 
     return (
-        <Container maxWidth="md" sx={{mt: 5}}>
+        <Container maxWidth="md">
+            <Typography variant="h4" align="center" gutterBottom>
+                Player Statistics
+            </Typography>
+
+            {/* Vocabulary Stats */}
+            <Card sx={{ mb: 4 }}>
+                <CardContent>
+                    <Typography variant="h5" gutterBottom>
+                        Vocabulary Game Averages
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {Object.keys(averagesByGame.vocabulary).map(player => (
+                            <Grid item xs={12} sm={6} key={player}>
+                                <Typography variant="body1">
+                                    {player}: {averagesByGame.vocabulary[player]} points
+                                </Typography>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </CardContent>
+            </Card>
+
+            {/* Articles Stats */}
             <Card>
                 <CardContent>
-                    <Typography variant="h5" gutterBottom align="center">
-                        Player Statistics
+                    <Typography variant="h5" gutterBottom>
+                        Articles Game Averages
                     </Typography>
-                    <Divider sx={{mb: 2}}/>
-                    <Box sx={{mb: 4}}>
-                        <Bar
-                            data={chartData}
-                            options={{
-                                responsive: true,
-                                plugins: {
-                                    legend: {
-                                        position: 'top',
-                                    },
-                                    tooltip: {
-                                        callbacks: {
-                                            label: (context) => `${context.label}: ${context.raw}`
-                                        }
-                                    }
-                                },
-                                scales: {
-                                    x: {
-                                        beginAtZero: true
-                                    },
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }}
-                        />
-                    </Box>
-                    <Typography variant="h6" gutterBottom align="center">
-                        Average Scores Per Player
-                    </Typography>
-                    <TableContainer component={Paper}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Player Name</TableCell>
-                                    <TableCell>Average Score</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {Object.keys(averageScores).map((name) => (
-                                    <TableRow key={name}>
-                                        <TableCell>{name}</TableCell>
-                                        <TableCell>{averageScores[name] || 'N/A'}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    <Grid container spacing={2}>
+                        {Object.keys(averagesByGame.articles).map(player => (
+                            <Grid item xs={12} sm={6} key={player}>
+                                <Typography variant="body1">
+                                    {player}: {averagesByGame.articles[player]} points
+                                </Typography>
+                            </Grid>
+                        ))}
+                    </Grid>
                 </CardContent>
             </Card>
         </Container>

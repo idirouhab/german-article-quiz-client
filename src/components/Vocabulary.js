@@ -252,7 +252,7 @@ const Quiz = () => {
             <Card>
                 <CardContent>
                     <Typography variant="h5" align="center" gutterBottom>
-                        What is the article for:
+                        Find the word:
                     </Typography>
                     <Typography variant="h4" align="center" sx={{mb: 4}}>
                         {currentWord.translation}
